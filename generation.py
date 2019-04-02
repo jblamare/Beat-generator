@@ -29,7 +29,7 @@ def sample_from_piano_rnn(rnn, sample_length=4, temperature=1, starting_sequence
 
     if starting_sequence is None:
         current_sequence_input = torch.zeros(1, 1, 128)
-        current_sequence_input[0, 0, 0] = 1
+        current_sequence_input[0, 0, 36] = 1
         current_sequence_input = Variable(current_sequence_input.cuda())
 
     final_output_sequence = [current_sequence_input.data.squeeze(1)]
