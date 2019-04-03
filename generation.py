@@ -3,7 +3,7 @@ import torch
 from torch.autograd import Variable
 import matplotlib.pyplot as plt
 
-from training import RNN
+from training import RNN, midi_filename_to_piano_roll
 
 
 def write_to_midi(sample, filename):
@@ -14,7 +14,7 @@ def write_to_midi(sample, filename):
     cur_note_start = 0
     # Iterate over note names, which will be converted to note number later
     for step in sample:
-        clock = clock + 1.0 / 4
+        clock = clock + 1.0 / 64
         step = step.nonzero()[0].tolist()
         for ind in step:
             note = pretty_midi.Note(velocity=127, pitch=ind, start=cur_note_start, end=clock)
@@ -32,6 +32,9 @@ def sample_from_piano_rnn(rnn, sample_length=4, temperature=1, starting_sequence
         current_sequence_input[0, 0, 36] = 1
         current_sequence_input = Variable(current_sequence_input.cuda())
 
+    else:
+        current_sequence_input = starting_sequence
+
     final_output_sequence = [current_sequence_input.data.squeeze(1)]
     hidden = None
 
@@ -47,13 +50,18 @@ def sample_from_piano_rnn(rnn, sample_length=4, temperature=1, starting_sequence
     return sampled_sequence
 
 
-temperature = 10
+if __name__ == "__main__":
 
-rnn = RNN(input_size=128, hidden_size=512, num_classes=128).cuda()
-rnn.load_state_dict(torch.load('models/music_rnn.pt'))
+    temperature = 0.75
+    starting_sequence = midi_filename_to_piano_roll("../MIDI/Beats/MF 121/AD2Beat.mid")
+    starting_sequence = torch.Tensor(starting_sequence).cuda().unsqueeze(1)
+    init_length = starting_sequence.shape[0]
 
-sample = sample_from_piano_rnn(rnn, sample_length=200, temperature=temperature).transpose()
-plt.imshow(sample)
-plt.savefig('sample_'+str(temperature)+'.png')
+    rnn = RNN(input_size=128, hidden_size=512, num_classes=128).cuda()
+    rnn.load_state_dict(torch.load('music_rnn.pt'))
 
-write_to_midi(sample.transpose(), 'sample_'+str(temperature)+'.midi')
+    sample = sample_from_piano_rnn(rnn, sample_length=init_length, temperature=temperature, starting_sequence=starting_sequence).transpose()
+    plt.imshow(sample)
+    plt.savefig('sample_'+str(temperature)+'.png')
+
+    write_to_midi(sample.transpose(), 'sample_'+str(temperature)+'.mid')
