@@ -3,8 +3,7 @@ import torch
 from torch.autograd import Variable
 import matplotlib.pyplot as plt
 
-from training import RNN, midi_filename_to_piano_roll
-
+from training import RNN, midi_filename_to_piano_roll, FS
 
 def write_to_midi(sample, filename):
     midi = pretty_midi.PrettyMIDI()
@@ -14,7 +13,7 @@ def write_to_midi(sample, filename):
     cur_note_start = 0
     # Iterate over note names, which will be converted to note number later
     for step in sample:
-        clock = clock + 1.0 / 64
+        clock = clock + 1.0 / 100
         step = step.nonzero()[0].tolist()
         for ind in step:
             note = pretty_midi.Note(velocity=127, pitch=ind, start=cur_note_start, end=clock)
@@ -52,10 +51,13 @@ def sample_from_piano_rnn(rnn, sample_length=4, temperature=1, starting_sequence
 
 if __name__ == "__main__":
 
-    temperature = 0.75
-    starting_sequence = midi_filename_to_piano_roll("../MIDI/Beats/MF 121/AD2Beat.mid")
+    temperature = 1
+    starting_sequence = midi_filename_to_piano_roll("../MIDI/Beats/DS 120/AD2Beat (6).mid")
+    print(starting_sequence[-1])
     starting_sequence = torch.Tensor(starting_sequence).cuda().unsqueeze(1)
     init_length = starting_sequence.shape[0]
+    print(init_length)
+    print(init_length / FS)
 
     rnn = RNN(input_size=128, hidden_size=512, num_classes=128).cuda()
     rnn.load_state_dict(torch.load('music_rnn.pt'))

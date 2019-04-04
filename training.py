@@ -5,17 +5,23 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torch.utils.data as data
 from torch.utils.data.sampler import SubsetRandomSampler
+import torch.nn.functional as F
 import os
 import random
+from math import ceil
 import sys
 import matplotlib.pyplot as plt
+
+FS = 64
 
 
 def midi_filename_to_piano_roll(midi_filename):
     # return an array of shape T*128
     midi = pretty_midi.PrettyMIDI(midi_filename)
-    midi.remove_invalid_notes()
-    piano_roll = midi.get_piano_roll()
+    end_time = midi.get_end_time()
+    end_time = ceil(end_time / 2) * 2
+    # midi.remove_invalid_notes()
+    piano_roll = midi.get_piano_roll(fs=FS, times=np.arange(0, end_time, 1./FS))
     # Binarize the pressed notes
     piano_roll[piano_roll > 0] = 1
     assert piano_roll.shape[0] == 128
@@ -109,8 +115,8 @@ if __name__ == "__main__":
     print("Dataset loaded")
 
     rnn = RNN(input_size=128, hidden_size=512, num_classes=128).cuda()
-    criterion = nn.CrossEntropyLoss().cuda()
-    criterion_val = nn.CrossEntropyLoss(reduction='sum').cuda()
+    criterion = nn.NLLLoss().cuda()
+    criterion_val = nn.NLLLoss(reduction='sum').cuda()
     optimizer = torch.optim.Adam(rnn.parameters())
 
     clip = 1.0
@@ -129,6 +135,7 @@ if __name__ == "__main__":
             input_sequences_batch_var = Variable(input_sequences_batch.cuda())
             optimizer.zero_grad()
             logits, _ = rnn(input_sequences_batch_var, sequences_lengths)
+            logits = F.logsigmoid(logits)
             loss = criterion(logits, output_sequences_batch_var)
             loss_list.append(loss.item())
             loss.backward()
@@ -146,6 +153,7 @@ if __name__ == "__main__":
             output_sequences_batch_var = Variable(output_sequences_batch.contiguous().view(-1).cuda())
             input_sequences_batch_var = Variable(input_sequences_batch.cuda())
             logits, _ = rnn(input_sequences_batch_var, sequences_lengths)
+            logits = F.logsigmoid(logits)
             loss = criterion_val(logits, output_sequences_batch_var)
             full_val_loss += loss.item()
             overall_sequence_length += sum(sequences_lengths)
