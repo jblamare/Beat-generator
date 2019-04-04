@@ -117,8 +117,8 @@ if __name__ == "__main__":
     print("Dataset loaded")
 
     rnn = RNN(input_size=128, hidden_size=512, num_classes=128).cuda()
-    criterion = nn.NLLLoss().cuda()
-    criterion_val = nn.NLLLoss(reduction='sum').cuda()
+    criterion = nn.CrossEntropyLoss().cuda()
+    criterion_val = nn.CrossEntropyLoss(reduction='sum').cuda()
     optimizer = torch.optim.Adam(rnn.parameters())
 
     clip = 1.0
@@ -138,7 +138,6 @@ if __name__ == "__main__":
             input_sequences_batch_var = Variable(input_sequences_batch.cuda())
             optimizer.zero_grad()
             logits, _ = rnn(input_sequences_batch_var, sequences_lengths)
-            logits = F.logsigmoid(logits)
             loss = criterion(logits, output_sequences_batch_var)
             loss_list.append(loss.item())
             loss.backward()
@@ -162,7 +161,6 @@ if __name__ == "__main__":
             output_sequences_batch_var = Variable(output_sequences_batch.contiguous().view(-1).cuda())
             input_sequences_batch_var = Variable(input_sequences_batch.cuda())
             logits, _ = rnn(input_sequences_batch_var, sequences_lengths)
-            logits = F.logsigmoid(logits)
             loss = criterion_val(logits, output_sequences_batch_var)
             full_val_loss += loss.item()
             overall_sequence_length += sum(sequences_lengths)
