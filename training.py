@@ -11,6 +11,7 @@ import random
 from math import ceil
 import sys
 import matplotlib.pyplot as plt
+from time import time
 
 FS = 64
 
@@ -18,13 +19,14 @@ FS = 64
 def midi_filename_to_piano_roll(midi_filename):
     # return an array of shape T*128
     midi = pretty_midi.PrettyMIDI(midi_filename)
-    end_time = midi.get_end_time()
-    end_time = ceil(end_time / 2) * 2
     # midi.remove_invalid_notes()
-    piano_roll = midi.get_piano_roll(fs=FS, times=np.arange(0, end_time, 1./FS))
+    piano_roll = midi.get_piano_roll(fs=FS)
     # Binarize the pressed notes
     piano_roll[piano_roll > 0] = 1
     assert piano_roll.shape[0] == 128
+    total_length = ceil(piano_roll.shape[1] / 128) * 128
+    end_padding = np.zeros((128, total_length - piano_roll.shape[1]))
+    piano_roll = np.concatenate((piano_roll, end_padding), axis=1)
     return piano_roll.transpose()
 
 
@@ -124,10 +126,11 @@ if __name__ == "__main__":
     loss_mean_list = []
     val_list = []
     best_val_loss = float("inf")
+    start_time = time()
 
     for epoch_number in range(epochs_number):
 
-        print("EPOCH ", epoch_number)
+        print("EPOCH ", epoch_number, time() - start_time)
         loss_list = []
 
         for input_sequences_batch, output_sequences_batch, sequences_lengths in trainset_loader:
@@ -141,6 +144,11 @@ if __name__ == "__main__":
             loss.backward()
             torch.nn.utils.clip_grad_norm_(rnn.parameters(), clip)
             optimizer.step()
+
+        del logits
+        del loss
+        del input_sequences_batch
+        del output_sequences_batch
 
         loss_list = np.array(loss_list)
         loss_mean_list.append(np.mean(loss_list))
@@ -157,6 +165,14 @@ if __name__ == "__main__":
             loss = criterion_val(logits, output_sequences_batch_var)
             full_val_loss += loss.item()
             overall_sequence_length += sum(sequences_lengths)
+
+        del logits
+        del loss
+        del input_sequences_batch
+        del output_sequences_batch
+
+        torch.cuda.empty_cache()
+
         full_val_loss /= (overall_sequence_length * 128)
 
         val_list.append(full_val_loss)
