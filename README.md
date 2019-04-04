@@ -10,9 +10,11 @@ The data path needs to be changed in training.py. Then the model can be trained 
 python training.py
 ```
 
-Alternatively, music_rnn.pt is a pretrained model to use for generation. We show below an example output of drums from this model:
+Alternatively, music_rnn.pt is a pretrained model to use for generation. Here's the piano roll for a few collaged outputs from this model:
 
 ![alt text](./generated/RobotDrums.PNG)
+
+<audio src="./generated/final_arrangement.mp3" controls preload></audio>
 
 ## Generation
 
