@@ -10,9 +10,9 @@ The data path needs to be changed in training.py. Then the model can be trained 
 python training.py
 ```
 
-Alternatively, music_rnn.pt is a pretrained model to use for generation. We show below the validation and training curves for this model:
+Alternatively, music_rnn.pt is a pretrained model to use for generation. We show below an example output of drums from this model:
 
-![alt text](./training.png)
+![alt text](./generated/RobotDrums.PNG)
 
 ## Generation
 
