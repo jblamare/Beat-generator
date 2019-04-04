@@ -87,6 +87,20 @@ class RNN(nn.Module):
         return logits_flatten, hidden
 
 
+def validation(valset_loader):
+    full_val_loss = 0.0
+    overall_sequence_length = 0.0
+    for input_sequences_batch, output_sequences_batch, sequences_lengths in valset_loader:
+        output_sequences_batch =  Variable( output_sequences_batch.contiguous().view(-1).cuda() )
+        input_sequences_batch = Variable( input_sequences_batch.cuda() )
+        logits, _ = rnn(input_sequences_batch, sequences_lengths)
+        loss = criterion_val(logits, output_sequences_batch)
+        full_val_loss += loss.item()
+        overall_sequence_length += sum(sequences_lengths)
+    full_val_loss /= (overall_sequence_length * 128)
+    return full_val_loss
+
+
 if __name__ == "__main__":
     print("Loading Dataset...")
     dataset = NotesGenerationDataset('/home/jlamare/Documents/CMU/10-615/Project3/Beats/')
@@ -123,34 +137,24 @@ if __name__ == "__main__":
         loss_list = []
 
         for input_sequences_batch, output_sequences_batch, sequences_lengths in trainset_loader:
-            output_sequences_batch_var =  Variable( output_sequences_batch.contiguous().view(-1).cuda() )
+            output_sequences_batch =  Variable( output_sequences_batch.contiguous().view(-1).cuda() )
             input_sequences_batch_var = Variable( input_sequences_batch.cuda() )
             optimizer.zero_grad()
             logits, _ = rnn(input_sequences_batch_var, sequences_lengths)
-            loss = criterion(logits, output_sequences_batch_var)
+            loss = criterion(logits, output_sequences_batch)
             loss_list.append( loss.item() )
             loss.backward()
             torch.nn.utils.clip_grad_norm_(rnn.parameters(), clip)
             optimizer.step()
+
+        del input_sequences_batch, output_sequences_batch, sequences_lengths, logits, loss 
 
         loss_list = np.array(loss_list)
         loss_mean_list.append(np.mean(loss_list))
         print("Training loss mean =", np.mean(loss_list))
         print("Training loss std =", np.std(loss_list))
 
-
-        full_val_loss = 0.0
-        overall_sequence_length = 0.0
-        for input_sequences_batch, output_sequences_batch, sequences_lengths in valset_loader:
-            output_sequences_batch_var =  Variable( output_sequences_batch.contiguous().view(-1).cuda() )
-            input_sequences_batch_var = Variable( input_sequences_batch.cuda() )
-            logits, _ = rnn(input_sequences_batch_var, sequences_lengths)
-            loss = criterion_val(logits, output_sequences_batch_var)
-            full_val_loss += loss.item()
-            overall_sequence_length += sum(sequences_lengths)
-        full_val_loss /= (overall_sequence_length * 128)
-
-
+        full_val_loss = validation(valset_loader)
         val_list.append(full_val_loss)
         print("Validation loss =", full_val_loss)
         

@@ -17,7 +17,7 @@ def write_to_midi(sample, filename):
         clock = clock + 1.0 / 4
         step = step.nonzero()[0].tolist()
         for ind in step:
-            note = pretty_midi.Note(velocity=127, pitch=ind, start=cur_note_start, end=clock)
+            note = pretty_midi.Note(velocity=50, pitch=ind, start=cur_note_start, end=clock)
             instrument.notes.append(note)
         cur_note_start = clock
 
@@ -47,10 +47,10 @@ def sample_from_piano_rnn(rnn, sample_length=4, temperature=1, starting_sequence
     return sampled_sequence
 
 
-temperature = 10
+temperature = 5
 
 rnn = RNN(input_size=128, hidden_size=512, num_classes=128).cuda()
-rnn.load_state_dict(torch.load('models/music_rnn.pt'))
+rnn.load_state_dict(torch.load('music_rnn.pt'))
 
 sample = sample_from_piano_rnn(rnn, sample_length=200, temperature=temperature).transpose()
 plt.imshow(sample)
