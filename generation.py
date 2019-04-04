@@ -51,9 +51,8 @@ def sample_from_piano_rnn(rnn, sample_length=4, temperature=1, starting_sequence
 
 if __name__ == "__main__":
 
-    temperature = 1
+    temperature = 0.8
     starting_sequence = midi_filename_to_piano_roll("../MIDI/Beats/DS 120/AD2Beat (6).mid")
-    print(starting_sequence[-1])
     starting_sequence = torch.Tensor(starting_sequence).cuda().unsqueeze(1)
     init_length = starting_sequence.shape[0]
     print(init_length)
@@ -62,7 +61,7 @@ if __name__ == "__main__":
     rnn = RNN(input_size=128, hidden_size=512, num_classes=128).cuda()
     rnn.load_state_dict(torch.load('music_rnn.pt'))
 
-    sample = sample_from_piano_rnn(rnn, sample_length=init_length, temperature=temperature, starting_sequence=starting_sequence).transpose()
+    sample = sample_from_piano_rnn(rnn, sample_length=init_length, temperature=temperature, starting_sequence=None).transpose()
     plt.imshow(sample)
     plt.savefig('sample_'+str(temperature)+'.png')
 

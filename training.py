@@ -93,20 +93,6 @@ class RNN(nn.Module):
         return logits_flatten, hidden
 
 
-def validation(valset_loader):
-    full_val_loss = 0.0
-    overall_sequence_length = 0.0
-    for input_sequences_batch, output_sequences_batch, sequences_lengths in valset_loader:
-        output_sequences_batch =  Variable( output_sequences_batch.contiguous().view(-1).cuda() )
-        input_sequences_batch = Variable( input_sequences_batch.cuda() )
-        logits, _ = rnn(input_sequences_batch, sequences_lengths)
-        loss = criterion_val(logits, output_sequences_batch)
-        full_val_loss += loss.item()
-        overall_sequence_length += sum(sequences_lengths)
-    full_val_loss /= (overall_sequence_length * 128)
-    return full_val_loss
-
-
 if __name__ == "__main__":
     print("Loading Dataset...")
     dataset = NotesGenerationDataset('../MIDI/Beats/')
